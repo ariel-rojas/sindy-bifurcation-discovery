@@ -52,7 +52,7 @@ It is designed to study complex bifurcations (such as the Takens-Bogdanov bifurc
 The project requires Python 3.8+ and the following libraries:
 
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ## ⚡ Workflow (Quick Start)
