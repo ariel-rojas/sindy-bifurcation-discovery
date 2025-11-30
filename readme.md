@@ -22,7 +22,7 @@ $$
 
 Where $x, y$ are the state variables and $\mu_1, \mu_2$ are the bifurcation parameters.
 
-**The Challenge:** Standard SINDy assumes constant coefficients. To capture bifurcations, this pipeline treats parameters ($\mu$) as quasi-static state variables ($\dot{\mu} \approx 0$). This allows the sparse regression to automatically discover the functional dependency between system dynamics and external control parameters.
+**The Challenge:** Standard SINDy assumes constant coefficients. To capture bifurcations, this pipeline treats parameters ($\mu$) as variables. This allows the sparse regression to automatically discover the functional dependency between system dynamics and external control parameters.
 
 ## 🚀 Key Features
 
