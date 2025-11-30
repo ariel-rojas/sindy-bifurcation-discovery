@@ -1,167 +1,172 @@
-# SINDy-Bifurcation: Descubrimiento de Sistemas Dinámicos Paramétricos
+# SINDy-Bifurcation: Parametric Dynamical Systems Discovery
 
-Este proyecto implementa un pipeline modular y de alto rendimiento para descubrir ecuaciones diferenciales no lineales dependientes de parámetros utilizando **SINDy** (Sparse Identification of Nonlinear Dynamics).
+This project implements a high-performance, modular pipeline for discovering parameter-dependent nonlinear differential equations using **SINDy** (Sparse Identification of Nonlinear Dynamics).
 
-Está diseñado para estudiar bifurcaciones complejas (como Takens-Bogdanov) generando datos sintéticos masivos, entrenando modelos de IA simbólica y validando los resultados mediante simulaciones paralelas comparativas.
+It is designed to study complex bifurcations (such as the Takens-Bogdanov bifurcation) by generating massive synthetic datasets, training symbolic AI models, and validating results through comparative parallel simulations.
 
-## 🚀 Características Principales
+## 🚀 Key Features
 
-* **Arquitectura Modular:** Separación estricta entre la definición física del sistema (`systems/`) y la maquinaria numérica (`core/`).
-* **Alto Rendimiento:** Integradores numéricos (RK4) y funciones de campo vectorial compilados en tiempo de ejecución con **Numba JIT**.
-* **Paralelismo Eficiente:** Uso de `ProcessPoolExecutor` para cómputo (CPU) y `ThreadPoolExecutor` para escritura en disco (I/O), permitiendo simulaciones masivas sin saturar la memoria.
-* **Streaming HDF5:** Los datos se escriben directamente a disco en formato HDF5 comprimido, soportando gigabytes de trayectorias.
-* **Agnóstico de la Dimensión:** Soporta sistemas de $N$ variables de estado y $M$ parámetros sin cambiar el código base.
-* **Optimización Avanzada:** Scripts dedicados para búsqueda de hiperparámetros (Grid Search) y ajuste fino (Hill Climbing).
-* **Visualización Interactiva:** Herramientas para explorar diagramas de bifurcación y comparar visualmente el "Ground Truth" vs. el modelo descubierto.
+* **Modular Architecture:** Strict separation between the physical system definition (`systems/`) and the numerical machinery (`core/`).
+* **High Performance:** Numerical integrators (RK4) and vector field functions compiled at runtime using **Numba JIT**.
+* **Efficient Parallelism:** Utilizes `ProcessPoolExecutor` for computation (CPU) and `ThreadPoolExecutor` for disk writing (I/O), enabling massive simulations without memory saturation.
+* **Streaming HDF5:** Data is written directly to disk in compressed HDF5 format, supporting gigabytes of trajectories.
+* **Dimension Agnostic:** Supports systems with $N$ state variables and $M$ parameters without changing the core codebase.
+* **Advanced Optimization:** Dedicated scripts for hyperparameter search (Grid Search) and fine-tuning (Hill Climbing).
+* **Interactive Visualization:** Tools to explore bifurcation diagrams and visually compare the "Ground Truth" vs. the discovered model.
 
-## 📂 Estructura del Proyecto
+## 📂 Project Structure
 
 ```text
 .
-├── core/                   # Maquinaria numérica y utilidades (Agnóstico)
+├── core/                   # Numerical machinery and utilities (Agnostic)
 │   ├── __init__.py
-│   ├── integrators.py      # Integrador RK4 genérico N-dimensional (Numba)
-│   ├── io.py               # Gestión de HDF5 y claves de parámetros
-│   └── utils.py            # Generación de grillas de parámetros
+│   ├── integrators.py      # Generic N-dimensional RK4 integrator (Numba)
+│   ├── io.py               # HDF5 management and parameter keys
+│   └── utils.py            # Parameter grid generation
 │
-├── systems/                # Definiciones de Ecuaciones Diferenciales
+├── systems/                # Differential Equation Definitions
 │   ├── __init__.py
-│   ├── base.py             # Clase base abstracta (Contrato)
-│   └── takens_bogdanov.py  # Implementación específica (física del problema)
+│   ├── base.py             # Abstract base class (Contract)
+│   └── takens_bogdanov.py  # Specific implementation (physics of the problem)
 │
-├── output/                 # Carpeta de SALIDA (se crea automáticamente)
-│   ├── trajectory_data.hdf5   # Datos de entrenamiento (Ground Truth)
-│   ├── sindy_model.joblib     # Modelo entrenado guardado
-│   ├── sindy_simulations.hdf5 # Datos de validación (Simulados por SINDy)
-│   ├── optimization_results/  # Resultados de búsqueda de hiperparámetros
-│   └── *.json                 # Metadatos y logs
+├── output/                 # OUTPUT folder (created automatically)
+│   ├── trajectory_data.hdf5   # Training data (Ground Truth)
+│   ├── sindy_model.joblib     # Trained model saved
+│   ├── sindy_simulations.hdf5 # Validation data (Simulated by SINDy)
+│   ├── optimization_results/  # Hyperparameter search results
+│   └── *.json                 # Metadata and logs
 │
-├── scripts/                # Scripts ejecutables
-│   ├── run_precompute.py       # 1. Generación masiva de datos
-│   ├── run_interactive.py      # 2. Exploración visual de datos
-│   ├── run_discovery.py        # 3. Entrenamiento del modelo SINDy (Single Run)
-│   ├── run_optimization.py     # 4. Búsqueda de mejores modelos (Grid Search)
-│   ├── run_fine_tuning.py      # 5. Refinamiento local (Hill Climbing)
-│   ├── run_validation.py       # 6. Simulación del modelo aprendido
-│   └── run_comparison.py       # 7. Comparación final (GT vs SINDy)
+├── scripts/                # Executable scripts
+│   ├── run_precompute.py       # 1. Massive data generation
+│   ├── run_interactive.py      # 2. Visual data exploration
+│   ├── run_discovery.py        # 3. SINDy model training (Single Run)
+│   ├── run_optimization.py     # 4. Best model search (Grid Search)
+│   ├── run_fine_tuning.py      # 5. Local refinement (Hill Climbing)
+│   ├── run_validation.py       # 6. Learned model simulation
+│   └── run_comparison.py       # 7. Final comparison (GT vs SINDy)
 └── README.md
 ```
 
-## 🛠️ Requisitos
+## 🛠️ Requirements
 
-El proyecto requiere Python 3.8+ y las siguientes librerías:
+The project requires Python 3.8+ and the following libraries:
 
 ```bash
 pip install numpy scipy matplotlib h5py numba pysindy tqdm joblib
 ```
 
-## ⚡ Flujo de Trabajo (Quick Start)
+## ⚡ Workflow (Quick Start)
 
-### 1. Definir el Sistema
-El sistema por defecto es **Takens-Bogdanov**. Para cambiarlo o añadir uno nuevo (ej. Van der Pol), crea un archivo en `systems/` heredando de `BaseSystem` y actualiza la importación en los scripts `scripts/run_*.py`:
+### 1. Define the System
+The default system is **Takens-Bogdanov**. To change it or add a new one (e.g., Van der Pol), create a file in `systems/` inheriting from `BaseSystem` and update the import in the `scripts/run_*.py` scripts:
 ```python
 from systems.takens_bogdanov import TakensBogdanov as System
 ```
 
-### 2. Generar Datos (Precompute)
-Simula el sistema real en una grilla de parámetros.
+### 2. Generate Data (Precompute)
+Simulate the real system across a parameter grid.
 ```bash
 python scripts/run_precompute.py
 ```
-* **Salida:** `output/trajectory_data.hdf5` (Trayectorias reales) y `output/grid_metadata.json`.
+* **Output:** `output/trajectory_data.hdf5` (Real trajectories) and `output/grid_metadata.json`.
 
-### 3. Explorar Datos (Opcional)
-Abre un visor interactivo para ver el mapa de bifurcación y las trayectorias generadas.
+### 3. Explore Data (Optional)
+Open an interactive viewer to see the bifurcation map and generated trajectories.
 ```bash
 python scripts/run_interactive.py
 ```
 
-### 4. Entrenar Modelo (Discovery)
-Usa PySINDy para encontrar las ecuaciones gobernantes, tratando a los parámetros como variables.
+### 4. Train Model (Discovery)
+Use PySINDy to find the governing equations, treating parameters as variables.
 ```bash
 python scripts/run_discovery.py
 ```
-* **Salida:** `output/sindy_model.joblib` (El modelo IA) y `output/sindy_training_params.json`.
+* **Output:** `output/sindy_model.joblib` (The AI model) and `output/sindy_training_params.json`.
 
-### 5. Validar Modelo
-Simula trayectorias nuevas usando **únicamente** las ecuaciones descubiertas por SINDy (reconstruidas en Numba).
+### 5. Validate Model
+Simulate new trajectories using **only** the equations discovered by SINDy (reconstructed in Numba).
 ```bash
 python scripts/run_validation.py
 ```
-* **Salida:** `output/sindy_simulations.hdf5` (Trayectorias simuladas por la IA).
+* **Output:** `output/sindy_simulations.hdf5` (Trajectories simulated by the AI).
 
-### 6. Comparar Resultados
-Muestra una interfaz gráfica lado a lado: Realidad vs. Modelo SINDy.
+### 6. Compare Results
+Display a side-by-side graphical interface: Reality vs. SINDy Model.
 ```bash
 python scripts/run_comparison.py
 ```
 
-## 🧪 Optimización Avanzada
+## 🧪 Advanced Optimization
 
-Si deseas encontrar el mejor modelo posible en lugar de entrenar uno solo:
+If you wish to find the best possible model instead of training just one:
 
-1.  **Ejecuta la Optimización:**
-    Busca los mejores hiperparámetros y combinaciones de datos.
+1.  **Run Optimization:**
+    Search for the best hyperparameters and data combinations (Top 5).
     ```bash
     python scripts/run_optimization.py
     ```
-    *Salida:* `output/optimization_results/top_models/`
+    *Output:* `output/optimization_results/top_models/`
 
+2.  **Refine the Champion:**
+    Take the best found model and try to improve it by perturbing data or parameters.
+    ```bash
+    python scripts/run_fine_tuning.py
+    ```
 
-## 📝 Notas sobre Numba
-La primera vez que se ejecuta un script, Numba compilará las funciones (JIT). Esto puede tomar unos segundos (warm-up). Las ejecuciones subsiguientes serán extremadamente rápidas gracias al caché.
-
----
-
-## 🧪 Guía Paso a Paso Detallada
-
-### Paso 0: Preparación del Entorno
-Verifica que la estructura de carpetas sea correcta:
-1. Carpeta `scripts/`: contiene todos los archivos `run_*.py`.
-2. Carpeta `core/`: `__init__.py`, `integrators.py`, `io.py`, `utils.py`.
-3. Carpeta `systems/`: `__init__.py`, `base.py`, `takens_bogdanov.py`.
-
-*Nota: Si faltan archivos `__init__.py`, créalos vacíos para habilitar los módulos.*
-
-### Paso 1: Generación de Datos Masivos (Ground Truth)
-Simula las ecuaciones diferenciales reales en una grilla de parámetros.
-* **Comando:** `python scripts/run_precompute.py`
-* **Qué hace:** Lee la configuración de `systems/takens_bogdanov.py`, genera una grilla de parámetros (mu1, mu2), ejecuta miles de trayectorias en paralelo y guarda todo en un HDF5 comprimido.
-
-### Paso 2: Exploración Visual (Sanity Check)
-Permite verificar visualmente que los datos generados tengan sentido.
-* **Comando:** `python scripts/run_interactive.py`
-* **Qué hace:** Abre un visor interactivo con un mapa de calor del número de puntos fijos. Al hacer clic en el mapa, muestra el retrato de fase correspondiente.
-
-### Paso 3: Entrenamiento (SINDy)
-Entrena el modelo simbólico para descubrir las ecuaciones gobernantes.
-* **Comando:** `python scripts/run_discovery.py`
-* **Qué hace:** Carga una muestra de trayectorias, ajusta un modelo SINDy para estimar las derivadas y guarda el modelo serializado.
-
-### Paso 4: Validación Numérica
-Evalúa el modelo descubierto simulando trayectorias nuevas.
-* **Comando:** `python scripts/run_validation.py`
-* **Qué hace:** Reconstruye las ecuaciones descubiertas, las compila con Numba y simula trayectorias para parámetros *no usados* en el entrenamiento.
-
-### Paso 5: Comparación Final
-Compara visualmente la dinámica real vs. la aprendida.
-* **Comando:** `python scripts/run_comparison.py`
-* **Qué hace:** Abre una interfaz con tres paneles: Mapa de cobertura, Dinámica real (Ground Truth) y Dinámica aprendida (SINDy).
-* **Criterio de éxito:** Si el modelo es bueno, los paneles central y derecho deben ser prácticamente indistinguibles.
+## 📝 Notes on Numba
+The first time a script is executed, Numba will compile the functions (JIT). This may take a few seconds (warm-up). Subsequent executions will be extremely fast thanks to caching.
 
 ---
 
-## Contribución
-Para agregar un nuevo sistema dinámico (ej. Van der Pol):
+## 🧪 Detailed Step-by-Step Guide
 
-1. Copia `systems/takens_bogdanov.py` → `systems/van_der_pol.py`.
-2. Modifica la clase para heredar de `BaseSystem`.
+### Step 0: Environment Preparation
+Verify that the folder structure is correct:
+1. `scripts/` folder: contains all `run_*.py` files.
+2. `core/` folder: `__init__.py`, `integrators.py`, `io.py`, `utils.py`.
+3. `systems/` folder: `__init__.py`, `base.py`, `takens_bogdanov.py`.
+
+*Note: If `__init__.py` files are missing, create them empty to enable modules.*
+
+### Step 1: Massive Data Generation (Ground Truth)
+Simulates the real differential equations on a parameter grid.
+* **Command:** `python scripts/run_precompute.py`
+* **What it does:** Reads the configuration from `systems/takens_bogdanov.py`, generates a parameter grid (mu1, mu2), executes thousands of trajectories in parallel, and saves everything to a compressed HDF5 file.
+
+### Step 2: Visual Exploration (Sanity Check)
+Allows visual verification that the generated data makes sense.
+* **Command:** `python scripts/run_interactive.py`
+* **What it does:** Opens an interactive viewer with a heatmap of the number of fixed points. Clicking on the map displays the corresponding phase portrait.
+
+### Step 3: Training (SINDy)
+Trains the symbolic model to discover the governing equations.
+* **Command:** `python scripts/run_discovery.py`
+* **What it does:** Loads a sample of trajectories, fits a SINDy model to estimate derivatives, and saves the serialized model.
+
+### Step 4: Numerical Validation
+Evaluates the discovered model by simulating new trajectories.
+* **Command:** `python scripts/run_validation.py`
+* **What it does:** Reconstructs the discovered equations, compiles them with Numba, and simulates trajectories for parameters *not used* in training.
+
+### Step 5: Final Comparison
+Visually compares the real vs. learned dynamics.
+* **Command:** `python scripts/run_comparison.py`
+* **What it does:** Opens an interface with three panels: Coverage map, Real dynamics (Ground Truth), and Learned dynamics (SINDy).
+* **Success Criteria:** If the model is good, the center and right panels should be practically indistinguishable.
+
+---
+
+## Contribution
+To add a new dynamical system (e.g., Van der Pol):
+
+1. Copy `systems/takens_bogdanov.py` → `systems/van_der_pol.py`.
+2. Modify the class to inherit from `BaseSystem`.
 3. Define:
    - `state_names`
    - `param_names`
-   - la función JIT `ode_func`
-   - `get_true_coefficients` (para validación)
-4. Actualiza los scripts `scripts/run_*.py` reemplazando la importación por:
+   - The JIT function `ode_func`
+   - `get_true_coefficients` (for validation)
+4. Update the `scripts/run_*.py` scripts by replacing the import with:
    ```python
    from systems.van_der_pol import VanDerPol as System
    ```
