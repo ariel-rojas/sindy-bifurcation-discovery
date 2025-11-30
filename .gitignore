@@ -5,7 +5,7 @@ output/
 *.joblib
 *.json
 *.npz
-*.txt
+
 
 # --- Archivos de Python generados ---
 __pycache__/
