@@ -1,18 +1,35 @@
-# SINDy-Bifurcation: Parametric Dynamical Systems Discovery
+# 🌌 SINDy-Bifurcation: Parametric Dynamical Systems Discovery
 
-This project implements a high-performance, modular pipeline for discovering parameter-dependent nonlinear differential equations using **SINDy** (Sparse Identification of Nonlinear Dynamics).
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![Scientific Computing](https://img.shields.io/badge/Scientific-Numba%20%7C%20SciPy-orange)](https://scipy.org/)
+[![SINDy](https://img.shields.io/badge/Method-PySINDy-green)](https://pysindy.readthedocs.io/)
 
-It is designed to study complex bifurcations (such as the Takens-Bogdanov bifurcation) by generating massive synthetic datasets, training symbolic AI models, and validating results through comparative parallel simulations.
+A high-performance, modular pipeline for the data-driven discovery of parameter-dependent nonlinear differential equations.
+
+This project leverages **Sparse Identification of Nonlinear Dynamics (SINDy)** to reconstruct complex bifurcation structures—specifically the **Takens-Bogdanov bifurcation**—from synthetic data. It combines massive parallel simulations with symbolic regression to recover governing physical laws from time-series data.
+
+---
+
+## 🔬 Scientific Context
+The goal is to discover the governing equations of a dynamical system that undergoes topological changes (bifurcations) as parameters $\mu$ vary. The primary testbed is the **Takens-Bogdanov normal form**:
+
+$$
+\begin{aligned}
+\dot{x} &= y \\
+\dot{y} &= \mu_1 + \mu_2 x + x^2 + xy
+\end{aligned}
+$$
+
+The pipeline generates trajectories across the $(\mu_1, \mu_2)$ parameter space and trains a SINDy model to rediscover these terms without prior knowledge of the physics.
 
 ## 🚀 Key Features
 
-* **Modular Architecture:** Strict separation between the physical system definition (`systems/`) and the numerical machinery (`core/`).
-* **High Performance:** Numerical integrators (RK4) and vector field functions compiled at runtime using **Numba JIT**.
-* **Efficient Parallelism:** Utilizes `ProcessPoolExecutor` for computation (CPU) and `ThreadPoolExecutor` for disk writing (I/O), enabling massive simulations without memory saturation.
-* **Streaming HDF5:** Data is written directly to disk in compressed HDF5 format, supporting gigabytes of trajectories.
-* **Dimension Agnostic:** Supports systems with $N$ state variables and $M$ parameters without changing the core codebase.
-* **Advanced Optimization:** Dedicated scripts for hyperparameter search (Grid Search) and fine-tuning (Hill Climbing).
-* **Interactive Visualization:** Tools to explore bifurcation diagrams and visually compare the "Ground Truth" vs. the discovered model.
+* **⚡ High Performance Computing:** Numerical integrators (RK4) and vector fields are Just-In-Time (JIT) compiled using **Numba**, offering C-like speeds.
+* **🧩 Modular Architecture:** Strict separation between physical system definitions (`systems/`) and the numerical core (`core/`), making the code agnostic to the specific ODE.
+* **💾 Efficient I/O Strategy:** Utilizes a hybrid parallelism model (`ProcessPoolExecutor` for CPU-bound integration, `ThreadPoolExecutor` for I/O), streaming gigabytes of trajectory data directly to compressed **HDF5** files.
+* **🎛️ Parametric Discovery:** Designed to handle systems where parameters are treated as state variables or control inputs.
+* **🔍 Advanced Optimization:** Includes scripts for Hyperparameter Grid Search and Hill Climbing fine-tuning to maximize model sparsity and accuracy.
+* **📊 Interactive Validation:** Tools for visual comparison between "Ground Truth" phase portraits and SINDy-reconstructed dynamics.
 
 ## 📂 Project Structure
 
