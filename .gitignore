@@ -1,0 +1,24 @@
+# --- Datos y Resultados (NO SUBIR) ---
+v1/
+output/
+*.hdf5
+*.joblib
+*.json
+*.npz
+*.txt
+
+# --- Archivos de Python generados ---
+__pycache__/
+*.pyc
+
+# --- Entornos Virtuales ---
+venv/
+env/
+takens_env/
+.env
+
+# --- Archivos del Sistema / IDE ---
+.DS_Store
+.vscode/
+.idea/
+
