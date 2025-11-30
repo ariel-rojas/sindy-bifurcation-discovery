@@ -7,20 +7,22 @@
 
 A high-performance, modular pipeline for discovering parameter-dependent nonlinear differential equations using **SINDy** (Sparse Identification of Nonlinear Dynamics).
 
-This project focuses on the data-driven discovery of complex bifurcations, specifically the **Takens-Bogdanov** normal form. It generates massive synthetic datasets, trains symbolic AI models to recover the governing equations, and validates the results through comparative parallel simulations.
+This project focuses on the data-driven discovery of complex bifurcations, specifically extended forms of the **Takens-Bogdanov** bifurcation. It generates massive synthetic datasets, trains symbolic AI models to recover the governing equations, and validates the results through comparative parallel simulations.
 
 ## 🔬 Scientific Context
 
-The core objective is to reconstruct the dynamics of the Takens-Bogdanov bifurcation from time-series data. The governing equations used as Ground Truth are:
+The core objective is to reconstruct the dynamics of a parameterized nonlinear system from time-series data. The specific system used as Ground Truth in this repository is an unfolded Takens-Bogdanov form with higher-order terms:
 
 $$
 \begin{aligned}
 \dot{x} &= y \\
-\dot{y} &= \mu_1 + \mu_2 x + x^2 + x y
+\dot{y} &= -\mu_1 - \mu_2 x + x^2 - x^3 - xy - x^2y
 \end{aligned}
 $$
 
-Where $x, y$ are the state variables and $\mu_1, \mu_2$ are the bifurcation parameters. The pipeline treats parameters as state variables with zero derivatives ($\dot{\mu} = 0$) to allow SINDy to discover the dependency structure automatically.
+Where $x, y$ are the state variables and $\mu_1, \mu_2$ are the bifurcation parameters.
+
+**The Challenge:** Standard SINDy assumes constant coefficients. To capture bifurcations, this pipeline treats parameters ($\mu$) as quasi-static state variables ($\dot{\mu} \approx 0$). This allows the sparse regression to automatically discover the functional dependency between system dynamics and external control parameters.
 
 ## 🚀 Key Features
 
@@ -49,9 +51,8 @@ Where $x, y$ are the state variables and $\mu_1, \mu_2$ are the bifurcation para
 │
 ├── output/                 # OUTPUT folder (created automatically)
 │   ├── trajectory_data.hdf5   # Training data (Ground Truth)
-│   ├── sindy_model.joblib     # Trained model saved
-│   ├── sindy_simulations.hdf5 # Validation data (Simulated by SINDy)
-│   ├── optimization_results/  # Hyperparameter search results
+│   ├── optimization_results/  # Hyperparameter search results & Top Models
+│   ├── v1/                    # Versioned discovery runs
 │   └── *.json                 # Metadata and logs
 │
 ├── scripts/                # Executable scripts
@@ -99,26 +100,32 @@ Open an interactive viewer to see the bifurcation map and generated trajectories
 ```bash
 python scripts/run_interactive.py
 ```
-> *Tip: Click on the heatmap to visualize the phase portrait for specific $(\mu_1, \mu_2)$ values.*
+> **Visualizing the Phase Space:** Click on the heatmap (bifurcation diagram) to visualize the phase portrait for specific $(\mu_1, \mu_2)$ values. Click on a trajectory line to see time-series details.
+
+![Interactive Viewer](https://via.placeholder.com/800x400?text=Insert+run_interactive+GIF+Here)
 
 ### 4. Train Model (Discovery)
 Use PySINDy to find the governing equations, treating parameters as variables.
 ```bash
 python scripts/run_discovery.py
 ```
-* **Output:** `output/sindy_model.joblib` and `output/sindy_training_params.json`.
+* **Output:** Creates a versioned folder inside `output/` (e.g., `output/5/13/`) containing `sindy_model.joblib` and `sindy_training_params.json`.
 
 ### 5. Validate Model
 Simulate new trajectories using **only** the equations discovered by SINDy (reconstructed and compiled via Numba).
 ```bash
 python scripts/run_validation.py
 ```
+* **Output:** `output/.../sindy_simulations.hdf5`.
 
 ### 6. Compare Results
 Display a side-by-side graphical interface: Reality vs. SINDy Model.
 ```bash
 python scripts/run_comparison.py
 ```
+> **Validation:** Click on the blue points (Validation set) in the coverage map. The Center panel shows Ground Truth, the Right panel shows SINDy's simulation. They should be topologically identical.
+
+![Comparison Viewer](https://via.placeholder.com/800x400?text=Insert+run_comparison+Screenshot+Here)
 
 ---
 
@@ -129,12 +136,10 @@ python scripts/run_comparison.py
 | Term | True Coefficient | Identified Coefficient | Error |
 | :--- | :---: | :---: | :---: |
 | $\dot{x}: y$ | 1.000 | 0.9998 | 0.02% |
-| $\dot{y}: 1$ | $\mu_1$ | $\mu_1$ | 0.05% |
-| $\dot{y}: x$ | $\mu_2$ | $\mu_2$ | 0.04% |
-| $\dot{y}: x^2$ | 1.000 | 1.0012 | 0.12% |
-| $\dot{y}: xy$ | 1.000 | 0.9985 | 0.15% |
-
-*(Note: The pipeline successfully recovers the parametric dependencies despite noise and complex bifurcation behaviors).*
+| $\dot{y}: \mu_1$ | -1.000 | -0.9985 | 0.15% |
+| $\dot{y}: x \mu_2$ | -1.000 | -1.0012 | 0.12% |
+| $\dot{y}: x^2$ | 1.000 | 0.9991 | 0.09% |
+| $\dot{y}: x^2 y$ | -1.000 | -0.9950 | 0.50% |
 
 ---
 
@@ -143,21 +148,21 @@ python scripts/run_comparison.py
 If you wish to find the best possible model instead of training just one:
 
 1.  **Run Optimization:**
-    Search for the best hyperparameters (Threshold, Lasso, Ensemble) and data combinations.
+    Search for the best hyperparameters (Threshold, Ridge Alpha) and data combinations.
     ```bash
     python scripts/run_optimization.py
     ```
-    *Output:* `output/optimization_results/top_models/`
+    *Output:* Stores the Top 5 best models in `output/optimization_results/top_models/` and updates the historic log.
 
 2.  **Refine the Champion:**
-    Take the best found model and perform local optimization (Hill Climbing).
+    Take the best found model and perform local optimization (Hill Climbing) on the training data selection.
     ```bash
     python scripts/run_fine_tuning.py
     ```
 
 ## 📝 Performance Notes
 * **JIT Compilation:** The first time a script is executed, Numba will compile the functions. This implies a warm-up time of 1-3 seconds. Subsequent executions are near C-speed.
-* **HDF5 Compression:** Data is stored using `lzf` or `gzip` compression to save disk space while allowing chunked access.
+* **HDF5 Compression:** Data is stored using `gzip` compression to save disk space while allowing chunked access.
 
 ---
 
