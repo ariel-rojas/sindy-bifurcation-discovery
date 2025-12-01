@@ -9,7 +9,7 @@ A high-performance, modular pipeline for discovering parameter-dependent nonline
 
 This project focuses on the data-driven discovery of complex bifurcations, specifically extended forms of the **Takens-Bogdanov** bifurcation. It generates massive synthetic datasets, trains symbolic AI models to recover the governing equations, and validates the results through comparative parallel simulations.
 
-## 🔬 Scientific Context
+## 🔬 Context
 
 The core objective is to reconstruct the dynamics of a parameterized nonlinear system from time-series data. The specific system used as Ground Truth in this repository is an unfolded Takens-Bogdanov form with higher-order terms:
 
