@@ -37,7 +37,7 @@ from core.io import parse_param_key, make_param_key
 # =============================================================================
 # CONFIGURACIÓN
 # =============================================================================
-DATA_DIR = "output/5/15"
+DATA_DIR = "output/5/18"
 CARPETA_FILES = os.path.join(PROJECT_ROOT, DATA_DIR)
 GT_HDF5 = os.path.join(os.path.join(PROJECT_ROOT, "output"), "trajectory_data.hdf5")
 SINDY_HDF5 = os.path.join(CARPETA_FILES, "sindy_simulations.hdf5")

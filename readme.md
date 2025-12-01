@@ -102,7 +102,7 @@ python scripts/run_interactive.py
 ```
 > **Visualizing the Phase Space:** Click on the heatmap (bifurcation diagram) to visualize the phase portrait for specific $(\mu_1, \mu_2)$ values. Click on a trajectory line to see time-series details.
 
-![Interactive Viewer](https://via.placeholder.com/800x400?text=Insert+run_interactive+GIF+Here)
+![Interactive Viewer](interactive_viewer_example.gif)
 
 ### 4. Train Model (Discovery)
 Use PySINDy to find the governing equations, treating parameters as variables.
@@ -125,7 +125,7 @@ python scripts/run_comparison.py
 ```
 > **Validation:** Click on the blue points (Validation set) in the coverage map. The Center panel shows Ground Truth, the Right panel shows SINDy's simulation. They should be topologically identical.
 
-![Comparison Viewer](https://via.placeholder.com/800x400?text=Insert+run_comparison+Screenshot+Here)
+![Comparison Viewer](comparison.gif)
 
 ---
 
