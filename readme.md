@@ -135,15 +135,18 @@ python scripts/run_comparison.py
 
 ## 📊 Example Results
 
-*Typical output from `run_discovery.py` comparing True vs. Identified coefficients:*
+*Typical output from `run_discovery.py` comparing True vs. Identified coefficients for the extended Takens-Bogdanov system:*
 
-| Term | True Coefficient | Identified Coefficient | Error |
-| :--- | :---: | :---: | :---: |
-| $\dot{x}: y$ | 1.000 | 0.9998 | 0.02% |
-| $\dot{y}: \mu_1$ | -1.000 | -0.9985 | 0.15% |
-| $\dot{y}: x \mu_2$ | -1.000 | -1.0012 | 0.12% |
-| $\dot{y}: x^2$ | 1.000 | 0.9991 | 0.09% |
-| $\dot{y}: x^2 y$ | -1.000 | -0.9950 | 0.50% |
+| Equation | Term | True Coeff | Identified Coeff | Error |
+| :--- | :--- | :---: | :---: | :---: |
+| $\dot{x}$ | $y$ | 1.000 | 0.9998 | 0.02% |
+| $\dot{y}$ | $\mu_1$ | -1.000 | -0.9985 | 0.15% |
+| $\dot{y}$ | $x \mu_2$ | -1.000 | -1.0012 | 0.12% |
+| $\dot{y}$ | $x^2$ | 1.000 | 0.9991 | 0.09% |
+| $\dot{y}$ | $x^3$ | -1.000 | -0.9995 | 0.05% |
+| $\dot{y}$ | $x y$ | -1.000 | -0.9988 | 0.12% |
+| $\dot{y}$ | $x^2 y$ | -1.000 | -0.9950 | 0.50% |
+
 
 ---
 
