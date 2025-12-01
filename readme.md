@@ -51,9 +51,13 @@ Where $x, y$ are the state variables and $\mu_1, \mu_2$ are the bifurcation para
 │
 ├── output/                 # OUTPUT folder (created automatically)
 │   ├── trajectory_data.hdf5   # Training data (Ground Truth)
+│   ├── grid_metadata.json     # Metadata for bifurcation map
 │   ├── optimization_results/  # Hyperparameter search results & Top Models
-│   ├── v1/                    # Versioned discovery runs
-│   └── *.json                 # Metadata and logs
+│   └── {N}/                   # Folder per Batch Size (e.g., "5")
+│       ├── versions_log.json  # History of runs for this batch size
+│       └── {ID}/              # Folder per Experiment Run (e.g., "13")
+│           ├── sindy_model.joblib     # Trained Model
+│           └── sindy_training_params.json
 │
 ├── scripts/                # Executable scripts
 │   ├── run_precompute.py       # 1. Massive data generation
