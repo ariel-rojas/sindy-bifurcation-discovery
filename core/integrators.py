@@ -2,7 +2,7 @@
 import numpy as np
 from numba import jit
 
-@jit(nopython=True, cache=True)
+@jit(nopython=True)
 def rk4_general(ode_func, y0, t_start, t_end, dt, params):
     """
     Integrador Runge-Kutta 4 de paso fijo (Genérico para N-Dimensiones).
@@ -35,7 +35,7 @@ def rk4_general(ode_func, y0, t_start, t_end, dt, params):
     f_half = np.float32(0.5)
     f_two = np.float32(2.0)
     f_six = np.float32(6.0)
-
+    max_safe_val = np.float32(1e10)
     for i in range(n_steps - 1):
         # k1, k2, k3, k4 serán arrays de shape (dim,)
         k1 = ode_func(t_curr, y_curr, params)
@@ -52,8 +52,14 @@ def rk4_general(ode_func, y0, t_start, t_end, dt, params):
                       y_curr + dt * k3, 
                       params)
         
-        # Actualización vectorial
+        
         y_next = y_curr + (k1 + f_two * k2 + f_two * k3 + k4) * (dt / f_six)
+        
+        # Verificamos NaNs, Infinitos o valores demasiado grandes
+        if not np.all(np.isfinite(y_next)) or np.any(np.abs(y_next) > max_safe_val):
+            # Cortamos la trayectoria y devolvemos solo hasta el punto válido (i+1)
+            return sol[:, :i+1]
+        # -----------------------------------------------------------
         
         sol[:, i + 1] = y_next
         y_curr = y_next

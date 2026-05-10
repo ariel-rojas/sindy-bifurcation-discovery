@@ -1,0 +1,26 @@
+[project]
+name = "sindy-bifurcation-discovery"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "derivative==0.6.3",
+    "google-api-python-client>=2.190.0",
+    "google-auth-oauthlib>=1.2.4",
+    "h5py==3.15.1",
+    "httplib2==0.22.0",
+    "joblib==1.5.2",
+    "matplotlib==3.10.7",
+    "mplcursors>=0.7.1",
+    "numba==0.62.1",
+    "numpy==2.2.6",
+    "pandas>=2.3.3",
+    "pysindy==2.0.0",
+    "python-dotenv>=1.2.1",
+    "scikit-learn==1.7.2",
+    "scipy==1.15.3",
+    "seaborn>=0.13.2",
+    "sympy>=1.14.0",
+    "tqdm==4.67.1",
+]

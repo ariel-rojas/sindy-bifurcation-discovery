@@ -1,24 +1,57 @@
-# --- Datos y Resultados (NO SUBIR) ---
-v1/
+# =====================================================================
+#  Datos generados (NO SUBIR)
+# =====================================================================
+data/
+results/
 output/
+v1/
+_archive/
+
+# Material crudo y artefactos de simulaciones
 *.hdf5
 *.joblib
-*.json
 *.npz
+*.log
 
+# =====================================================================
+#  Tesis (escritura) - auxiliares de LaTeX
+# =====================================================================
+thesis/**/*.aux
+thesis/**/*.log
+thesis/**/*.out
+thesis/**/*.toc
+thesis/**/*.synctex.gz
+thesis/**/*.bbl
+thesis/**/*.blg
+thesis/**/*.fdb_latexmk
+thesis/**/*.fls
 
-# --- Archivos de Python generados ---
+# =====================================================================
+#  Python
+# =====================================================================
 __pycache__/
 *.pyc
+*.pyo
 
-# --- Entornos Virtuales ---
+# =====================================================================
+#  Entornos virtuales
+# =====================================================================
+.venv/
+.venv_*/
 venv/
 env/
 takens_env/
-.env
 
-# --- Archivos del Sistema / IDE ---
+# =====================================================================
+#  Variables de entorno y credenciales
+# =====================================================================
+.env
+config/credentials.json
+config/token.json
+
+# =====================================================================
+#  Sistema / IDE
+# =====================================================================
 .DS_Store
 .vscode/
 .idea/
-

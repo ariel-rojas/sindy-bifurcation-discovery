@@ -1,0 +1,182 @@
+\chapter{\textbf{Identificación dispersa de sistemas no lineales}}
+\label{2:cap:identificacion_de_sistemas_no_lineales_mediante_representaciones_dispersas}
+
+Este capítulo presenta el método \textit{Sparse Identification of Nonlinear Dynamics} (SINDy), introducido por Brunton, Proctor y Kutz en 2016~\cite{brunton2016pnas}, sobre el cual se apoyan todos los experimentos numéricos de esta tesis. SINDy aborda el problema de inferir las ecuaciones diferenciales que gobiernan un sistema dinámico a partir de mediciones de su evolución temporal, una situación recurrente en disciplinas en las que abundan los datos pero los modelos de primeros principios son inaccesibles, incompletos o computacionalmente prohibitivos.
+
+Dentro del panorama del descubrimiento de ecuaciones \textit{data-driven}, SINDy ocupa un lugar específico. Por un lado, es una alternativa computacionalmente eficiente a la regresión simbólica clásica~\cite{schmidt2009eureqa}, que explora el espacio de expresiones algebraicas mediante algoritmos genéticos a un costo elevado. Por otro, es una alternativa interpretable a los modelos de caja negra: a diferencia de una red neuronal profunda, el resultado de SINDy es una expresión analítica de pocos términos, susceptible de análisis cualitativo y comparación directa con los modelos derivados de primeros principios.
+
+Su premisa fundamental es la \textbf{parsimonia}: en una base funcional adecuada, la dinámica de la mayoría de los sistemas físicos de interés puede describirse mediante un número reducido de términos. SINDy materializa esta premisa proponiendo una biblioteca extensa de funciones candidatas y resolviendo un problema de \textbf{regresión rala} que selecciona el subconjunto mínimo capaz de reproducir las observaciones. Esta hipótesis, lejos de ser arbitraria, se alinea naturalmente con el objeto de estudio de esta tesis: las Formas Normales que se desarrollan en los capítulos siguientes son, por construcción, ralas —retienen únicamente los términos resonantes alrededor de una bifurcación—, lo que sugiere \textit{a priori} que SINDy debería ser una herramienta adecuada para recuperarlas. Si esta intuición se sostiene en la práctica, y bajo qué condiciones, es la pregunta empírica que organiza el resto del trabajo.
+
+A lo largo del capítulo se desarrollan la formulación matemática del método (§\ref{2:sec:intro_metodo}), los algoritmos de regresión rala que constituyen su núcleo computacional (§\ref{2:sec:regresion_dispersa}) y la extensión paramétrica que habilita su aplicación a sistemas con parámetros de control (§\ref{2:sec:extension_parametrica}). Esta última extensión es la que vuelve posible el estudio de bifurcaciones desde datos y, por lo tanto, sostiene el experimento central de la tesis.
+
+\section{El método SINDy}
+\label{2:sec:intro_metodo}
+
+Considérese un sistema dinámico autónomo de la forma
+
+\begin{equation}
+\frac{d}{dt}x(t) = f(x(t)),
+\tag{2.1}
+\label{eq:sistema_dinamico}
+\end{equation}
+
+donde $x(t) \in \mathbb{R}^n$ representa el estado del sistema en el instante $t$ y $f: \mathbb{R}^n \to \mathbb{R}^n$ es el campo vectorial que determina su evolución temporal. El objetivo de SINDy es descubrir la forma analítica de $f$ a partir de observaciones empíricas del sistema.
+
+\subsection{Construcción de las matrices de datos}
+
+El primer paso consiste en muestrear el estado del sistema en $m$ instantes de tiempo $\{t_1, \dots, t_m\}$ y organizar las observaciones en una matriz $\mathbf{X} \in \mathbb{R}^{m \times n}$, donde cada fila corresponde a un instante:
+
+\[
+\mathbf{X} =
+\begin{bmatrix}
+\mathbf{x}^T(t_1) \\
+\mathbf{x}^T(t_2) \\
+\vdots \\
+\mathbf{x}^T(t_m)
+\end{bmatrix}
+=
+\begin{bmatrix}
+x_1(t_1) & x_2(t_1) & \cdots & x_n(t_1) \\
+x_1(t_2) & x_2(t_2) & \cdots & x_n(t_2) \\
+\vdots & \vdots & \ddots & \vdots \\
+x_1(t_m) & x_2(t_m) & \cdots & x_n(t_m)
+\end{bmatrix}.
+\]
+
+Junto con el estado se requiere su derivada temporal $\dot{\mathbf{X}} \in \mathbb{R}^{m \times n}$, que en la práctica rara vez se mide directamente y debe estimarse a partir de $\mathbf{X}$ por diferenciación numérica. Esta operación es una de las principales fuentes de error del método: amplifica el ruido de medición y, dependiendo del esquema utilizado (diferencias finitas, derivada espectral, filtros tipo Savitzky--Golay), introduce sesgos sistemáticos. La elección del esquema y de su parametrización es por lo tanto parte integral del flujo de trabajo, y se discute en detalle en el Capítulo~\ref{X:cap:metodologia} junto con las decisiones específicas de cada experimento.
+
+\subsection{Biblioteca de funciones candidatas}
+
+El núcleo conceptual del método radica en la construcción de una biblioteca de funciones candidatas, organizada como una matriz $\Theta(\mathbf{X}) \in \mathbb{R}^{m \times p}$ cuyas columnas contienen evaluaciones de funciones no lineales sobre las filas de $\mathbf{X}$. Cada columna representa un término analítico que potencialmente forma parte del campo vectorial $f$:
+
+\[
+\Theta(\mathbf{X}) =
+\begin{bmatrix}
+\mathbf{1} & \mathbf{X} & \mathbf{X}^{P_2} & \mathbf{X}^{P_3} & \cdots & \sin(\mathbf{X}) & \cos(\mathbf{X}) & \cdots
+\end{bmatrix}.
+\]
+
+Los bloques $\mathbf{X}^{P_k}$ contienen todas las combinaciones de orden $k$ de las componentes del estado. Por ejemplo, $\mathbf{X}^{P_2}$ comprende los productos $x_i x_j$ con $i \le j$:
+
+\[
+\mathbf{X}^{P_2} =
+\begin{bmatrix}
+x_1^2(t_1) & x_1(t_1)\,x_2(t_1) & \cdots & x_2^2(t_1) & \cdots & x_n^2(t_1) \\
+x_1^2(t_2) & x_1(t_2)\,x_2(t_2) & \cdots & x_2^2(t_2) & \cdots & x_n^2(t_2) \\
+\vdots & \vdots & \ddots & \vdots & \ddots & \vdots \\
+x_1^2(t_m) & x_1(t_m)\,x_2(t_m) & \cdots & x_2^2(t_m) & \cdots & x_n^2(t_m)
+\end{bmatrix}.
+\]
+
+% Sugerencia: insertar aquí la Figura 1 de Brunton et al. 2016 (esquema general del pipeline SINDy:
+% datos -> derivada -> biblioteca -> regresión rala -> ecuación recuperada). Adaptar la leyenda al contexto.
+
+La elección de la biblioteca codifica todo el conocimiento previo disponible sobre el sistema y constituye, en los hechos, la decisión de modelado más importante. Una biblioteca demasiado pobre (e.g., únicamente lineal) excluye \textit{a priori} la dinámica relevante; una demasiado rica encarece el problema de optimización y aumenta la probabilidad de identificar términos espurios. Para que el método tenga garantías es además fundamental que las columnas de $\Theta(\mathbf{X})$ sean lo suficientemente independientes entre sí: si dos columnas resultan altamente correlacionadas en los datos disponibles, el problema de regresión queda mal condicionado y la selección de términos pierde unicidad. Esta condición de baja \textit{coherencia} entre columnas es la que sostiene los resultados teóricos de la regresión rala —heredados de la teoría de \textit{compressive sensing}~\cite{candes2008cs}— y se traduce, en la práctica, en el requisito de muestrear el espacio de fases con suficiente diversidad.
+
+\subsection{Reformulación como regresión dispersa}
+
+Bajo la hipótesis de parsimonia, se postula que cada componente de $f$ se escribe como combinación lineal de unas pocas funciones de la biblioteca. La ecuación~\eqref{eq:sistema_dinamico} se reescribe entonces como un sistema lineal en una matriz de coeficientes $\Xi \in \mathbb{R}^{p \times n}$:
+
+\begin{equation}
+\dot{\mathbf{X}} = \Theta(\mathbf{X})\,\Xi,
+\tag{2.2}
+\label{eq:sindy_main}
+\end{equation}
+
+donde la columna $j$-ésima de $\Xi$, denotada $\xi_j$, contiene los coeficientes que describen la dinámica de $\dot{x}_j$. La hipótesis de parsimonia se traduce en una condición estructural sobre $\Xi$: cada columna debe ser \textbf{rala}, es decir, la mayoría de sus entradas deben ser exactamente cero. El problema de identificación de $f$ queda así convertido en un problema de regresión lineal con solución dispersa.
+
+\section{Regresión rala y algoritmos de identificación}
+\label{2:sec:regresion_dispersa}
+
+Una vez planteada la ecuación~\eqref{eq:sindy_main}, el problema de identificación se reduce a determinar la matriz $\Xi$ que satisface, en algún sentido aproximado, esta relación. La pregunta operativa no es si existe solución —en el régimen de interés práctico el sistema está sobredeterminado—, sino cuál entre infinitas soluciones aproximadas elegir.
+
+\subsection{Mínimos cuadrados ordinarios y la necesidad de promover dispersión}
+
+La opción más directa es resolver el problema sin restricciones:
+
+\[
+\min_{\Xi}\, \|\dot{\mathbf{X}} - \Theta(\mathbf{X})\,\Xi\|_2^2.
+\]
+
+Esta formulación produce sin embargo soluciones \textit{densas}, en las que prácticamente todos los coeficientes son distintos de cero. El resultado es indeseable por dos motivos. Primero, el modelo es ininterpretable: al mezclar decenas de términos sin jerarquía, pierde el carácter explicativo que justifica su búsqueda. Segundo, en presencia de ruido en $\dot{\mathbf{X}}$ —que es la situación normal, dado que la derivada se estima numéricamente—, la solución sobreajusta los datos y compromete la capacidad de generalización a condiciones iniciales o regímenes paramétricos no observados.
+
+\subsection{LASSO: regularización $\ell_1$}
+
+Una primera estrategia para promover soluciones ralas consiste en agregar un término de regularización $\ell_1$ a la función objetivo, dando lugar al problema LASSO~\cite{tibshirani1996lasso}:
+
+\[
+\min_{\Xi}\, \|\dot{\mathbf{X}} - \Theta(\mathbf{X})\,\Xi\|_2^2 + \lambda\,\|\Xi\|_1,
+\]
+
+donde $\lambda > 0$ controla el balance entre el ajuste a los datos y la cantidad de coeficientes activos. La regularización $\ell_1$ tiene la propiedad geométrica de inducir vértices en la región factible que coinciden con los ejes coordenados, lo que favorece soluciones con coeficientes exactamente nulos. El problema es convexo, lo que garantiza la existencia y unicidad de un mínimo global. Sin embargo, en el contexto de SINDy, LASSO presenta dos limitaciones relevantes: el costo computacional escala desfavorablemente con el tamaño de la biblioteca y los coeficientes de los términos activos quedan sistemáticamente sesgados hacia cero, lo que distorsiona los valores numéricos recuperados aun cuando la estructura del soporte sea correcta.
+
+\subsection{STLSQ: \textit{Sequentially Thresholded Least Squares}}
+
+El algoritmo propuesto en el trabajo original de Brunton et al.~\cite{brunton2016pnas}, y utilizado a lo largo de esta tesis, es \textit{Sequentially Thresholded Least Squares} (STLSQ). Combina mínimos cuadrados ordinarios con un esquema iterativo de poda. La idea es directa: se resuelve el problema sin penalización, se eliminan los coeficientes pequeños, y se vuelve a ajustar restringiendo la regresión a los términos sobrevivientes. Formalmente:
+
+\begin{enumerate}
+    \item Resolver $\Xi^{(0)} = \arg\min_\Xi \|\dot{\mathbf{X}} - \Theta(\mathbf{X})\,\Xi\|_2^2$ por mínimos cuadrados ordinarios.
+    \item Para cada columna $\xi_j$, anular los coeficientes con $|\xi_{ij}| < \lambda$.
+    \item Re-resolver el problema de mínimos cuadrados restringido al soporte vigente —es decir, a las columnas de $\Theta$ con coeficientes no nulos—.
+    \item Repetir 2--3 hasta que el soporte se estabilice.
+\end{enumerate}
+
+El parámetro $\lambda$ cumple un rol análogo al del LASSO —controla el nivel de dispersión—, pero el procedimiento difiere en dos puntos importantes. Primero, sobre el soporte final los coeficientes \textit{no} están sesgados: provienen de un mínimos cuadrados sin penalización. Segundo, su costo computacional es marcadamente menor, lo que vuelve preferible al algoritmo cuando la biblioteca es grande o cuando el barrido sobre $\lambda$ requiere muchas evaluaciones. En contrapartida, STLSQ no es convexo y no admite garantías globales de convergencia; en la práctica, sin embargo, su desempeño empírico en aplicaciones de SINDy es robusto y está bien documentado~\cite{brunton2016pnas, desilva2020pysindy}.
+
+En el resto de la tesis, STLSQ se utiliza como optimizador por defecto, y la elección del umbral $\lambda$ se trata como un hiperparámetro que se barre explícitamente en cada experimento.
+
+\section{Extensión paramétrica de SINDy}
+\label{2:sec:extension_parametrica}
+
+En la mayoría de los sistemas físicos de interés la evolución temporal no depende únicamente del estado $x(t)$, sino también de un vector de parámetros $\mu$ que controlan su comportamiento. Estos parámetros pueden representar constantes físicas, condiciones experimentales o magnitudes de control externas (presión aplicada, intensidad de un forzado, temperatura). Una característica fundamental de los sistemas paramétricos es que pequeñas variaciones en $\mu$ pueden inducir cambios cualitativos en la dinámica —apariciones, desapariciones o cambios de estabilidad de soluciones— conocidos como \textbf{bifurcaciones}, cuyo tratamiento sistemático se desarrolla en el Capítulo~\ref{3:cap:dinamica_no_lineal}. La capacidad de SINDy para capturar dependencia paramétrica es, por lo tanto, condición necesaria para que el método pueda usarse en el descubrimiento de bifurcaciones a partir de datos.
+
+\subsection{Aumentar el estado con los parámetros}
+
+La estrategia estándar, propuesta ya en el trabajo original de Brunton et al.~\cite{brunton2016pnas}, consiste en \textbf{tratar los parámetros como variables del estado} con derivada temporal nula y dejar que el algoritmo de regresión rala descubra cómo aparecen en el campo vectorial. El sistema original $\dot{x} = f(x; \mu)$ se reescribe ampliando el vector de estado:
+
+\begin{equation}
+\begin{aligned}
+\dot{x} &= f(x; \mu), \\
+\dot{\mu} &= 0.
+\end{aligned}
+\tag{2.3}
+\label{eq:sindy_parametrizado}
+\end{equation}
+
+Bajo esta formulación, $\mu$ pasa a ser una variable observable más, y la matriz de datos se aumenta concatenando las columnas correspondientes a los valores del parámetro en cada instante. La biblioteca $\Theta$ se extiende coherentemente para incluir términos cruzados entre $x$ y $\mu$ —productos del tipo $x_i\mu_j$, $x_i^2\mu_j$, etc.—, lo que le da al algoritmo el vocabulario necesario para representar cualquier dependencia paramétrica polinomial.
+
+\paragraph{Observación práctica.} En los experimentos típicos —incluidos los de esta tesis— $\mu$ no varía con el tiempo \textit{dentro} de una trayectoria, sino \textit{entre} trayectorias: cada simulación se ejecuta con un valor fijo de $\mu$, y la matriz de datos final agrega trayectorias correspondientes a una grilla de valores de $\mu$. La derivada $\dot{\mu}$ es exactamente nula por construcción y no requiere estimación numérica. La hipótesis de identificabilidad es entonces que los datos cubren una región del plano $(x, \mu)$ suficientemente representativa como para que las dependencias funcionales sean recuperables.
+
+\subsection{Ejemplo: la bifurcación silla-nodo}
+
+Para fijar ideas con un caso analítico simple, considérese la forma normal de la bifurcación silla-nodo, sistema unidimensional con un único parámetro $\mu$:
+
+\begin{equation}
+\dot{x} = \mu - x^2.
+\tag{2.4}
+\label{eq:ejemplo_silla_nodo}
+\end{equation}
+
+Supóngase que se dispone de mediciones de $x(t)$ y de su derivada $\dot{x}(t)$ para distintos valores de $\mu$, y que se ignora deliberadamente la forma de la ecuación~\eqref{eq:ejemplo_silla_nodo}. El procedimiento de SINDy paramétrico es el siguiente.
+
+\textbf{Construcción de la biblioteca.} Se elige una base polinomial truncada hasta orden 2 sobre las variables $(x, \mu)$. La fila de $\Theta(\mathbf{X}, \boldsymbol{\mu})$ correspondiente a una observación dada es
+
+\begin{equation}
+\Theta(x, \mu) = \begin{bmatrix} 1 & x & \mu & x^2 & x\mu & \mu^2 \end{bmatrix}.
+\tag{2.5}
+\label{eq:theta_ejemplo_1d}
+\end{equation}
+
+\textbf{Regresión rala.} El método busca un vector de coeficientes $\xi$ que satisfaga $\dot{x} = \Theta(x, \mu)\,\xi$ con la mayor cantidad posible de entradas nulas. Aplicado a datos suficientemente diversos en $\mu$, STLSQ recupera
+
+\begin{equation}
+\xi = \begin{bmatrix} 0 & 0 & 1 & -1 & 0 & 0 \end{bmatrix}^T,
+\tag{2.6}
+\label{eq:xi_ejemplo_1d}
+\end{equation}
+
+es decir, identifica los términos $\mu$ y $x^2$ con coeficientes $+1$ y $-1$, reproduciendo la ecuación~\eqref{eq:ejemplo_silla_nodo} exactamente.
+
+Este ejemplo es deliberadamente trivial —la silla-nodo es la bifurcación más simple posible—, pero ilustra los tres ingredientes que estructuran el resto de la tesis: una biblioteca polinomial de bajo orden, un parámetro de control tratado como variable adicional del estado, y un vector de coeficientes ralo cuyas entradas no nulas se corresponden con los términos resonantes de una forma normal. El Capítulo~\ref{X:cap:tb_canonico} extenderá este esquema al caso de codimensión 2 de Takens-Bogdanov, donde la biblioteca, los datos y la dispersión esperada serán cualitativamente más ricas.
+
+\clearpage
