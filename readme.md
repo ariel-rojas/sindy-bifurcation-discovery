@@ -2,16 +2,15 @@
 
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Status](https://img.shields.io/badge/status-tesis_en_curso-orange)
 ![Stack](https://img.shields.io/badge/stack-NumPy_|_Numba_|_PySINDy-8A2BE2)
 
-Pipeline modular y de alto rendimiento para descubrir, mediante **SINDy** (*Sparse Identification of Nonlinear Dynamics*), las ecuaciones diferenciales que gobiernan sistemas no lineales con dependencia paramétrica, con foco en el **descubrimiento de bifurcaciones** de codimensión 2.
+Pipeline modular y de alto rendimiento para descubrir, mediante **SINDy** (*Sparse Identification of Nonlinear Dynamics*), las ecuaciones diferenciales que gobiernan sistemas no lineales con dependencia paramétrica.
 
-Este repositorio acompaña la tesis de Ari Rojas (Facultad — Físico/Matemática Aplicada). La tesis cuestiona la concepción de SINDy como una "caja negra" de extracción ciega de ecuaciones y explora si efectivamente sirve para extraer **Formas Normales** subyacentes, aprovechando que las FN son intrínsecamente ralas — alineación natural con la regresión dispersa de SINDy.
+El foco del proyecto es el **descubrimiento data-driven de bifurcaciones de codimensión 2**, con herramientas para: generación masiva de datos sintéticos, entrenamiento por ensamble de modelos SINDy, validación cruzada por simulación, búsqueda de hiperparámetros y exploración interactiva del espacio de parámetros.
 
 ## Tabla de contenidos
 
-- [Contexto científico](#contexto-cient%C3%ADfico)
+- [Características](#caracter%C3%ADsticas)
 - [Sistemas implementados](#sistemas-implementados)
 - [Arquitectura del repositorio](#arquitectura-del-repositorio)
 - [Instalación](#instalaci%C3%B3n)
@@ -24,17 +23,20 @@ Este repositorio acompaña la tesis de Ari Rojas (Facultad — Físico/Matemáti
 
 ---
 
-## Contexto científico
+## Características
 
-El objetivo central es reconstruir, a partir de series temporales, la dinámica de un sistema parametrizado:
+- **Descubrimiento paramétrico de ecuaciones**. SINDy clásico asume coeficientes constantes; este pipeline trata los parámetros como variables adicionales del estado, lo que permite a la regresión rala recuperar la dependencia funcional entre la dinámica y los parámetros — incluyendo, en principio, las **curvas de bifurcación**.
+- **Pipeline cloud-native**. Las trayectorias se generan localmente y se suben a Google Drive en streaming, permitiendo experimentos pesados sin saturar disco local.
+- **Numba JIT end-to-end**. Integradores RK4, campos vectoriales y bibliotecas polinómicas compilados con `@jit(nopython=True, cache=True)`.
+- **Paralelismo en dos niveles**. `ProcessPoolExecutor` para CPU (integración) + `ThreadPoolExecutor` para I/O (subida a Drive y escritura HDF5).
+- **Streaming HDF5**. Datos en `float32` con compresión `gzip` y chunking por trayectoria para acceso eficiente.
+- **Visualización interactiva**. Visores del retrato de fases, mapa de bifurcaciones y comparador *Ground Truth* vs SINDy.
+- **Análisis avanzado**. Búsqueda de hiperparámetros (Grid Search), refinamiento (Hill Climbing), barridos temporales con checkpoints, sweeps estadísticos, detección rigurosa de la curva homoclínica.
+- **Agnóstico a la dimensión**. La máquina numérica soporta sistemas con $N$ variables de estado y $M$ parámetros sin cambios al núcleo.
 
-$$
-\dot{\mathbf{x}} = f(\mathbf{x}, \boldsymbol{\mu})
-$$
+## Sistemas implementados
 
-donde $\mathbf{x}\in\mathbb{R}^N$ es el estado y $\boldsymbol{\mu}\in\mathbb{R}^M$ son parámetros de control. SINDy clásico asume coeficientes constantes; este pipeline trata los parámetros como **variables adicionales** del estado, lo que permite a la regresión rala descubrir la dependencia funcional entre la dinámica y los parámetros — incluyendo, en principio, las **curvas de bifurcación**.
-
-El sistema patrón usado como *Ground Truth* es la forma normal extendida de Takens-Bogdanov:
+El sistema patrón es la forma normal extendida de **Takens-Bogdanov**:
 
 $$
 \begin{aligned}
@@ -45,14 +47,12 @@ $$
 
 con $(\mu_1, \mu_2)$ como parámetros de bifurcación. Este sistema exhibe cinco zonas dinámicas distintas separadas por curvas de **Saddle-Node**, **Hopf** y **Homoclínica**.
 
-## Sistemas implementados
-
 | Sistema | Archivo | Descripción |
 |---|---|---|
-| **Takens-Bogdanov extendido** | `systems/takens_bogdanov.py` | Forma normal con términos de orden superior, codimensión 2. Caso de estudio principal (cap. 1 de tesis). |
+| **Takens-Bogdanov extendido** | `systems/takens_bogdanov.py` | Forma normal con términos de orden superior, codimensión 2. Caso de estudio principal. |
 | **TB cuadrático** | `systems/cuadratic_takens_bogdanov.py` | Variante didáctica más simple. |
 | **TB cúbico simétrico** | `systems/cubic_symmetric_takens_bogdanov.py` | Variante con simetría $\mathbb{Z}_2$. |
-| **Siringe (modelo masa 1 modificado)** | `systems/syrinx.py` | Modelo biomecánico dimensional para vocalización aviar. Sistema físico real (cap. 2 de tesis). Parámetros de control: presión subglótica $P_\text{sub}$ y rigidez lineal $\kappa_1$. |
+| **Siringe (modelo masa 1 modificado)** | `systems/syrinx.py` | Modelo biomecánico dimensional para vocalización aviar. Parámetros de control: presión subglótica $P_\text{sub}$ y rigidez lineal $\kappa_1$. |
 
 El modelo de la siringe es:
 
@@ -64,7 +64,7 @@ Tiene 12 parámetros físicos (mecánicos, geométricos y aerodinámicos), de lo
 
 ## Arquitectura del repositorio
 
-El repo está organizado **por rol** (qué hace cada cosa), no por sistema, para evitar duplicación y dejar claro qué es código, qué es dato y qué es escritura de tesis:
+El repo está organizado **por rol** (qué hace cada cosa), no por sistema, para evitar duplicación y dejar claro qué es código y qué es dato:
 
 ```text
 sindy-bifurcation-discovery/
@@ -75,8 +75,6 @@ sindy-bifurcation-discovery/
 │   └── syrinx/
 ├── data/                       # Artefactos generados (gitignored)
 ├── results/                    # Resultados curados de análisis (gitignored)
-├── thesis/                     # Escritura: .tex, .bib, .md
-├── _archive/                   # Material legacy (gitignored)
 ├── config/                     # Credenciales de Drive (gitignored)
 ├── images/                     # GIFs del README
 ├── readme.md
@@ -86,10 +84,8 @@ sindy-bifurcation-discovery/
 
 ### Por qué esta estructura
 
-- **`systems/` vs `experiments/`** — `systems/<x>.py` define las ODE; `experiments/<x>/` contiene los scripts que las usan. La separación evita el conflicto histórico entre `takens_bogdanov/` (carpeta de scripts) y `systems/takens_bogdanov.py` (módulo).
+- **`systems/` vs `experiments/`** — `systems/<x>.py` define las ODE; `experiments/<x>/` contiene los scripts que las usan. La separación evita el conflicto entre carpetas de scripts y módulos del mismo nombre.
 - **`data/` vs `results/`** — `data/` es output crudo del pipeline (HDF5 con trayectorias, metadata JSON de la grilla, imágenes auxiliares de zonas). `results/` es el output curado del análisis posterior (sweeps estadísticos, random searches, figuras finales).
-- **`thesis/`** — todo lo que se compila a la tesis vive aparte. Permite que el repo de código no se contamine con auxiliares de LaTeX y que la sincronización con OneDrive sea más predecible.
-- **`_archive/`** — material congelado pero recuperable: corridas viejas, dumps de migración, `venv` corruptos. Gitignored para no inflar el remoto.
 
 ## Instalación
 
@@ -332,6 +328,20 @@ Diccionario con la lista de jobs (cada uno con sus parámetros, su zona, su key 
 
 `joblib`-serialized `pysindy.SINDy` model + `sindy_training_params.json` con la configuración exacta de la corrida (semilla, hiperparámetros, modo de muestreo).
 
+## Ejemplo de resultados
+
+Salida típica de `sindy_training.py`, comparando coeficientes verdaderos vs identificados sobre el sistema Takens-Bogdanov extendido:
+
+| Ecuación | Término | Coef. verdadero | Coef. identificado | Error |
+| :--- | :--- | :---: | :---: | :---: |
+| $\dot{x}$ | $y$ | 1.000 | 0.9998 | 0.02% |
+| $\dot{y}$ | $\mu_1$ | -1.000 | -0.9985 | 0.15% |
+| $\dot{y}$ | $x \mu_2$ | -1.000 | -1.0012 | 0.12% |
+| $\dot{y}$ | $x^2$ | 1.000 | 0.9991 | 0.09% |
+| $\dot{y}$ | $x^3$ | -1.000 | -0.9995 | 0.05% |
+| $\dot{y}$ | $x y$ | -1.000 | -0.9988 | 0.12% |
+| $\dot{y}$ | $x^2 y$ | -1.000 | -0.9950 | 0.50% |
+
 ## Cómo extender
 
 ### Agregar un sistema nuevo
@@ -376,15 +386,6 @@ Esto actualiza `param_ranges` y `state_limits` en toda la clase, propagándose a
 - **HDF5 con `gzip`**. Las trayectorias se comprimen al escribir; la sobrecarga de descompresión es despreciable comparada con la integración.
 - **Paralelismo en dos niveles**. `ProcessPoolExecutor` para CPU (integración numérica), `ThreadPoolExecutor` para I/O (subida a Drive y escritura HDF5). Permite mantener saturada la CPU mientras los workers de I/O van vaciando la cola.
 - **Cloud streaming**. Los `.npz` temporales se borran apenas se confirma la subida a Drive, evitando inflación de disco local en sweeps largos.
-
-## Estado de la tesis
-
-- **Cap. 0 — Introducción**: marco teórico de SINDy y regresión rala, espacio de hiperparámetros, pregunta de investigación.
-- **Cap. 1 — SINDy aplicado a Formas Normales (codim 2)**: TB como caso de estudio. Experimentos con datos sintéticos en las 5 zonas, parámetros variables, lejos de la TB.
-- **Cap. 2 — Sistema físico real**: ecuación de la siringe, simulaciones alrededor de la bifurcación TB, comparación con el modelo biomecánico.
-- **Cap. 3 — Conclusiones**: eficacia del método e implicancias para derivar Formas Normales desde sistemas físicos complejos.
-
-Los archivos de escritura viven en `thesis/`.
 
 ## Licencia
 
